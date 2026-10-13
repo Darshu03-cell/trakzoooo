@@ -88,7 +88,8 @@
   // 'users' stays local-only (browser auth). Everything else syncs to Supabase.
   var TABLES = ['users', 'clients', 'projects', 'materials', 'purchase_orders', 'transactions',
     'accounts', 'calendar_events', 'estimation_items', 'project_details', 'project_materials',
-    'project_expenses', 'project_estimates', 'project_progress', 'project_documents', 'project_notes'];
+    'project_expenses', 'project_estimates', 'project_progress', 'project_documents', 'project_notes',
+    'user_activity'];
   var CLOUD_TABLES = TABLES.filter(function (t) { return t !== 'users'; });
   function isCloud(t) { return CLOUD_TABLES.indexOf(t) >= 0; }
   // tables keyed by something other than "id"
@@ -187,7 +188,7 @@
           // Safety net: if Supabase is missing an app-added optional column
           // (owner_email / cost_head), re-save the row WITHOUT those columns so
           // no data is ever lost until the column is added in Supabase.
-          var OPT = ['owner_email', 'cost_head'];
+          var OPT = ['owner_email', 'cost_head', 'est_date'];
           if (op.row && OPT.some(function (k) { return op.row[k] != null; })) {
             var r2 = {}; Object.keys(op.row).forEach(function (k) { if (OPT.indexOf(k) < 0) r2[k] = op.row[k]; });
             return SB.from(op.table).upsert(r2, opts).then(function (res2) { if (res2 && res2.error) remaining.push(op); });
@@ -229,7 +230,8 @@
    * RLS in Supabase and switch logins to Supabase Auth (see SETUP notes).
    * `users` is not scoped — it's managed by the admin-only Admin Panel. */
   function ownerKey() { var u = currentUser(); return u ? String(u.email).toLowerCase() : null; }
-  function isScoped(t) { return t !== 'users'; }
+  // 'users' and 'user_activity' are admin-managed, not per-account scoped.
+  function isScoped(t) { return t !== 'users' && t !== 'user_activity'; }
   function ownsRow(r) { var k = ownerKey(); return k != null && !!r && String(r.owner_email || '').toLowerCase() === k; }
   function canRead(t, r) { return !isScoped(t) || isAdmin() || ownsRow(r); }
   function canWrite(t, r) { return isAdmin() || (isScoped(t) && ownsRow(r)); }
@@ -267,7 +269,7 @@
     where: function (t, fn) { load(); return scopeRows(t, DB[t].filter(fn)); },
     get: function (t, id) { load(); id = +id; var r = DB[t].filter(function (x) { return x.id === id; })[0] || null; return (r && canRead(t, r)) ? r : null; },
     insert: function (t, obj) {
-      load(); stampOwner(t, obj); obj.id = nextId(t); DB[t].push(obj); persist();
+      load(); stampOwner(t, obj); if (obj.id == null) obj.id = nextId(t); DB[t].push(obj); persist();
       recordOwner(t, obj.id, obj.owner_email);
       if (isCloud(t)) enqueue({ op: 'upsert', table: t, row: obj });
       return obj.id;
@@ -341,12 +343,26 @@
   function logout() { localStorage.removeItem(USER_KEY); location.href = 'login.html'; }
   function requireLogin() { if (!currentUser()) { location.replace('login.html'); return false; } return true; }
 
+  // Append-only login/signup feed for the Admin Panel (synced to Supabase so the
+  // admin sees activity from every device). Never blocks auth if logging fails.
+  var actSeq = 0;
+  function logActivity(name, email, event) {
+    try {
+      db.insert('user_activity', {
+        id: Date.now() * 1000 + (actSeq++ % 1000),
+        name: String(name || '').trim(), email: String(email || '').trim().toLowerCase(),
+        event: event, at: nowStamp(),
+      });
+    } catch (e) {}
+  }
+
   function signin(email, password) {
     load(); email = String(email || '').trim();
     var u = DB.users.filter(function (x) { return String(x.email).toLowerCase() === email.toLowerCase(); })[0];
     if (!u || u.password !== password) return { error: 'Invalid email or password.' };
     u.last_login = nowStamp(); persist();
     setUser({ id: u.id, name: u.name, email: u.email, role: u.role });
+    logActivity(u.name, u.email, 'login');
     return { ok: true };
   }
   function signup(name, email, password, confirm) {
@@ -360,7 +376,21 @@
     var role = email.toLowerCase() === ADMIN_EMAIL ? 'Administrator' : 'Member';
     var id = db.insert('users', { name: name, email: email, password: password, role: role, last_login: nowStamp(), created_at: todayISO() });
     setUser({ id: id, name: name, email: email, role: role });
+    logActivity(name, email, 'signup');
     return { ok: true };
+  }
+  // Self-service password reset (browser-local auth — no email link; user sets a
+  // new password directly for any account that exists in this browser's store).
+  function resetPassword(email, password, confirm) {
+    load(); email = String(email || '').trim();
+    if (!email || !password || !confirm) return { error: 'Please fill in all fields.' };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Please enter a valid email address.' };
+    if (password.length < 6) return { error: 'Password must be at least 6 characters.' };
+    if (password !== confirm) return { error: 'Passwords do not match.' };
+    var u = DB.users.filter(function (x) { return String(x.email).toLowerCase() === email.toLowerCase(); })[0];
+    if (!u) return { error: 'No account found with that email.' };
+    u.password = password; persist();
+    return { ok: true, name: u.name };
   }
 
   /* ---------------- Report data (shared by reports.js + report.js) ---------------- */
@@ -456,7 +486,7 @@
     MONTHS: MONTHS, MONTHS_SHORT: MONTHS_SHORT, DAYS: DAYS, pad: pad,
     db: db, flash: flash, takeFlashes: takeFlashes, qs: qs, formData: formData,
     currentUser: currentUser, isAdmin: isAdmin, logout: logout, requireLogin: requireLogin,
-    setSessionUser: setUser, signin: signin, signup: signup,
+    setSessionUser: setUser, signin: signin, signup: signup, resetPassword: resetPassword,
     reportData: reportData, reportStamp: reportStamp,
     cloudEnabled: TZ_configured,
   };

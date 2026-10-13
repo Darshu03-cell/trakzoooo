@@ -87,8 +87,10 @@ create table if not exists project_estimates (
   project_id bigint, floor text, description text, unit text,
   qty double precision, rate double precision, amount double precision
 );
--- If the table already existed without the floor column, add it:
+-- If the table already existed without these columns, add them:
 alter table project_estimates add column if not exists floor text;
+alter table project_estimates add column if not exists cost_head text;
+alter table project_estimates add column if not exists est_date text;
 
 create table if not exists project_progress (
   id bigint primary key,
@@ -105,6 +107,12 @@ create table if not exists project_notes (
   project_id bigint, body text, created_at text
 );
 
+-- Login / signup activity feed for the Admin Panel (no passwords are stored here).
+create table if not exists user_activity (
+  id bigint primary key,
+  name text, email text, event text, at text
+);
+
 -- ============================================================================
 -- Access: allow the public "anon" key (used by the browser) to read/write.
 -- This is the standard prototype setup. See SETUP notes for hardening later
@@ -116,7 +124,8 @@ begin
   foreach t in array array[
     'clients','projects','materials','purchase_orders','transactions','accounts',
     'calendar_events','estimation_items','project_details','project_materials',
-    'project_expenses','project_estimates','project_progress','project_documents','project_notes'
+    'project_expenses','project_estimates','project_progress','project_documents','project_notes',
+    'user_activity'
   ]
   loop
     execute format('alter table public.%I enable row level security;', t);

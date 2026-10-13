@@ -1,6 +1,6 @@
 /* Calendar (ports calendar.php) */
 (function () {
-  var e = TZ.esc, icon = window.icon, F = TZ.fieldInput, S = TZ.fieldSelect;
+  var e = TZ.esc, icon = window.icon, F = TZ.fieldInput, S = TZ.fieldSelect, SO = TZ.fieldSelectOther;
   var typeColor = { meeting: 'bg-violet-500', deadline: 'bg-rose-500', inspection: 'bg-blue-500', delivery: 'bg-amber-500', task: 'bg-emerald-500' };
 
   var projects = TZ.db.all('projects').sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
@@ -69,7 +69,7 @@
           '<form id="add" class="space-y-3">' +
             F('Title', 'title', '', 'text', 'Site inspection') +
             '<div class="grid grid-cols-2 gap-3">' + F('Date', 'event_date', todayIso, 'date') + F('Time', 'event_time', '', 'time') + '</div>' +
-            S('Type', 'type', { task: 'Task', meeting: 'Meeting', deadline: 'Deadline', inspection: 'Inspection', delivery: 'Delivery' }, 'task') +
+            SO('Type', 'type', { task: 'Task', meeting: 'Meeting', deadline: 'Deadline', inspection: 'Inspection', delivery: 'Delivery' }, 'task', 'Type event type') +
             S('Project', 'project_id', projOpts, '') +
             '<button class="w-full px-5 py-2.5 bg-brand hover:bg-brand-hover text-white text-sm font-semibold rounded-xl flex items-center justify-center gap-1.5">' + icon('plus', 16) + 'Add event</button>' +
           '</form></div>' +
@@ -81,10 +81,9 @@
     document.getElementById('add').addEventListener('submit', function (ev) {
       ev.preventDefault();
       var d = TZ.formData(this);
-      var allowed = ['meeting', 'deadline', 'inspection', 'delivery', 'task'];
       TZ.db.insert('calendar_events', {
         title: (d.title || '').trim(), event_date: d.event_date || todayIso,
-        type: allowed.indexOf(d.type) >= 0 ? d.type : 'task', event_time: d.event_time || '',
+        type: (d.type || 'task').trim() || 'task', event_time: d.event_time || '',
         project_id: parseInt(d.project_id, 10) || null,
       });
       TZ.flash('Event added.'); location.href = 'calendar.html?ym=' + ym;

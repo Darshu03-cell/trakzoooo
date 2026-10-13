@@ -1,6 +1,6 @@
 /* Account Tracker (ports account_tracker.php) */
 (function () {
-  var e = TZ.esc, icon = window.icon, money = TZ.money, F = TZ.fieldInput, S = TZ.fieldSelect;
+  var e = TZ.esc, icon = window.icon, money = TZ.money, F = TZ.fieldInput, S = TZ.fieldSelect, SO = TZ.fieldSelectOther;
   var typeMeta = { bank: ['dollar', 'bg-blue-50 text-blue-600'], cash: ['dollar', 'bg-emerald-50 text-emerald-600'], credit: ['credit-card', 'bg-violet-50 text-violet-600'] };
 
   var action = TZ.qs('action') || 'list';
@@ -13,7 +13,7 @@
         '<div class="p-6"><div class="max-w-xl mx-auto bg-white rounded-2xl border border-slate-100 shadow-sm p-6">' +
           '<form id="f" class="space-y-4"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4">' +
             F('Account name', 'name', edit && edit.name, 'text', 'Chase Business Checking') +
-            S('Type', 'type', { bank: 'Bank', cash: 'Cash', credit: 'Credit' }, (edit && edit.type) || 'bank') +
+            SO('Type', 'type', { bank: 'Bank', cash: 'Cash', credit: 'Credit' }, (edit && edit.type) || 'bank', 'Type account type') +
             F('Balance', 'balance', edit && edit.balance, 'number', '0', 'step="0.01"') +
             F('Currency', 'currency', (edit && edit.currency) || 'INR', 'text', 'INR') +
           '</div><div class="flex gap-3 pt-2">' +
@@ -24,9 +24,8 @@
       document.getElementById('f').addEventListener('submit', function (ev) {
         ev.preventDefault();
         var d = TZ.formData(this);
-        var allowed = ['bank', 'cash', 'credit'];
         var rec = {
-          name: (d.name || '').trim(), type: allowed.indexOf(d.type) >= 0 ? d.type : 'bank',
+          name: (d.name || '').trim(), type: (d.type || 'bank').trim() || 'bank',
           balance: Number(d.balance) || 0, currency: (d.currency || 'INR').trim(), last_transaction: TZ.todayISO(),
         };
         if (edit) { TZ.db.update('accounts', edit.id, rec); TZ.flash('Account updated.'); }

@@ -1,7 +1,7 @@
 /* Admin Panel (ports admin.php) — restricted to ADMIN_EMAIL. */
 (function () {
   if (!TZ.requireLogin()) return;
-  if (!TZ.isAdmin()) { TZ.flash('That area is for administrators only.', 'error'); location.replace('index.html'); return; }
+  if (!TZ.isAdmin()) { TZ.flash('That area is for administrators only.', 'error'); location.replace('workspace.html'); return; }
 
   var e = TZ.esc, icon = window.icon, money = TZ.money, moneyShort = TZ.moneyShort;
   var ADMIN = TZ.ADMIN_EMAIL;
@@ -42,6 +42,11 @@
     projects.sort(function (a, b) { return b.id - a.id; });
     var cmap = {}; clients.forEach(function (c) { cmap[c.id] = c; });
 
+    // Login / signup feed (newest first) — synced across devices via Supabase.
+    var activity = TZ.db.all('user_activity').slice().sort(function (a, b) {
+      var d = String(b.at || '').localeCompare(String(a.at || '')); return d !== 0 ? d : (b.id - a.id);
+    }).slice(0, 50);
+
     var statTiles = stats.map(function (s) {
       return '<div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">' +
         '<div class="w-9 h-9 rounded-xl ' + s[3] + ' flex items-center justify-center mb-2">' + icon(s[2], 17) + '</div>' +
@@ -81,6 +86,18 @@
     }).join('');
     if (!projects.length) projRows = '<tr><td colspan="7" class="px-5 py-8 text-center text-slate-400">No projects yet.</td></tr>';
 
+    var actRows = activity.map(function (a) {
+      var isSignup = a.event === 'signup';
+      return '<tr class="hover:bg-slate-50/70">' +
+        '<td class="px-5 py-3"><div class="min-w-0"><p class="font-semibold text-slate-800 truncate">' + e(a.name || '—') + '</p>' +
+          '<p class="text-xs text-slate-400 truncate">' + e(a.email || '') + '</p></div></td>' +
+        '<td class="px-5 py-3 text-center"><span class="text-[11px] font-semibold px-2 py-0.5 rounded-lg inline-flex items-center gap-1 ' +
+          (isSignup ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700') + '">' + icon(isSignup ? 'plus' : 'login', 11) + ' ' +
+          (isSignup ? 'Signed up' : 'Logged in') + '</span></td>' +
+        '<td class="px-5 py-3 text-right text-slate-500 whitespace-nowrap">' + e(a.at || '') + '</td></tr>';
+    }).join('');
+    if (!activity.length) actRows = '<tr><td colspan="3" class="px-5 py-8 text-center text-slate-400">No login or signup activity recorded yet.</td></tr>';
+
     root.innerHTML = '<div class="p-4 sm:p-6 space-y-4">' +
       '<div class="rounded-2xl p-5 text-white flex items-center gap-4" style="background:linear-gradient(135deg,#0F2B4C 0%,#1D4ED8 100%)">' +
         '<div class="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">' + icon('shield', 24) + '</div>' +
@@ -98,6 +115,15 @@
           '<th class="px-5 py-3 font-semibold">Last login</th><th class="px-5 py-3 font-semibold text-center">Access</th>' +
           '<th class="px-5 py-3 font-semibold text-right">Actions</th></tr></thead>' +
           '<tbody class="divide-y divide-slate-100">' + userRows + '</tbody></table></div></div>' +
+
+      '<div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">' +
+        '<div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><div><h3 class="font-bold text-slate-900 text-sm font-display">Login &amp; Signup Activity</h3>' +
+          '<p class="text-xs text-slate-400">Every sign-up and login, newest first (syncs across devices)</p></div>' +
+          '<span class="text-xs bg-emerald-50 text-emerald-600 font-semibold px-2.5 py-1 rounded-lg">' + activity.length + ' recent</span></div>' +
+        '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-xs text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-100">' +
+          '<th class="px-5 py-3 font-semibold">User</th><th class="px-5 py-3 font-semibold text-center">Event</th>' +
+          '<th class="px-5 py-3 font-semibold text-right">When</th></tr></thead>' +
+          '<tbody class="divide-y divide-slate-100">' + actRows + '</tbody></table></div></div>' +
 
       '<div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">' +
         '<div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><div><h3 class="font-bold text-slate-900 text-sm font-display">All Projects (Company Work)</h3>' +

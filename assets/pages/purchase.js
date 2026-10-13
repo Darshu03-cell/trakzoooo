@@ -1,10 +1,17 @@
 /* Purchase Orders (ports purchase.php) */
 (function () {
-  var e = TZ.esc, icon = window.icon, money = TZ.money, F = TZ.fieldInput, S = TZ.fieldSelect, CUR = TZ.CUR, trimNum = TZ.trimNum;
+  var e = TZ.esc, icon = window.icon, money = TZ.money, F = TZ.fieldInput, S = TZ.fieldSelect, SO = TZ.fieldSelectOther, CUR = TZ.CUR, trimNum = TZ.trimNum;
   var badge = { pending: 'bg-amber-100 text-amber-700', approved: 'bg-blue-100 text-blue-700', delivered: 'bg-emerald-100 text-emerald-700', cancelled: 'bg-rose-100 text-rose-600' };
 
   var projects = TZ.db.all('projects').sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
   var projOpts = { '': '— none —' }; projects.forEach(function (p) { projOpts[p.id] = p.name; });
+
+  // Product list for the Item dropdown — pulled from the Materials catalogue
+  // (unique names, A–Z). Users pick one, or choose "Other" to type a new product.
+  var seenItem = {}, itemOpts = [];
+  TZ.db.all('materials').map(function (m) { return (m.name || '').trim(); }).filter(Boolean)
+    .sort(function (a, b) { return a.localeCompare(b); })
+    .forEach(function (n) { var k = n.toLowerCase(); if (!seenItem[k]) { seenItem[k] = 1; itemOpts.push(n); } });
 
   var action = TZ.qs('action') || 'list';
   var editId = TZ.qs('id');
@@ -16,7 +23,7 @@
         '<div class="p-6"><div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-100 shadow-sm p-6">' +
           '<form id="f" class="space-y-4"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4">' +
             F('Supplier', 'supplier', edit && edit.supplier, 'text', 'Atlas Cement Co.') +
-            F('Item', 'item', edit && edit.item, 'text', 'Portland Cement OPC 53') +
+            SO('Item', 'item', itemOpts, edit && edit.item, 'Type product name') +
             F('Quantity', 'qty', edit && edit.qty, 'number', '0', 'step="0.01"') +
             F('Rate (' + CUR + ')', 'rate', edit && edit.rate, 'number', '0', 'step="0.01"') +
             S('Status', 'status', { pending: 'Pending', approved: 'Approved', delivered: 'Delivered', cancelled: 'Cancelled' }, (edit && edit.status) || 'pending') +

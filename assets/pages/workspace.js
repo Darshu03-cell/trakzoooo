@@ -1,7 +1,7 @@
 /* Project Workspace (ports workspace.php) — per-project dashboards. */
 (function () {
   var e = TZ.esc, icon = window.icon, money = TZ.money, moneyShort = TZ.moneyShort, trimNum = TZ.trimNum, CUR = TZ.CUR;
-  var F = TZ.fieldInput, S = TZ.fieldSelect, TA = TZ.fieldTextarea;
+  var F = TZ.fieldInput, S = TZ.fieldSelect, SO = TZ.fieldSelectOther, TA = TZ.fieldTextarea;
 
   var SECTIONS = {
     overview: ['Overview', 'dashboard'],
@@ -38,7 +38,15 @@
   // Cost estimation heads (Labour / Material / …) with a colour each.
   var EST_HEADS = ['Labour', 'Material', 'Equipment', 'Contractor', 'Overhead', 'Misc'];
   var EST_HEAD_COLORS = { Labour: '#F59E0B', Material: '#1D4ED8', Equipment: '#8B5CF6', Contractor: '#10B981', Overhead: '#EF4444', Misc: '#64748B' };
-  function estHead(it) { var h = it && it.cost_head && String(it.cost_head).trim(); return EST_HEADS.indexOf(h) >= 0 ? h : 'Misc'; }
+  // Fallback palette for custom ("Other") cost heads not in EST_HEAD_COLORS.
+  var EST_EXTRA_COLORS = ['#0EA5E9', '#D946EF', '#F97316', '#14B8A6', '#A855F7', '#EAB308', '#EC4899', '#6366F1'];
+  function headColorMap(heads) {
+    var map = {}, ei = 0;
+    heads.forEach(function (h) { map[h] = EST_HEAD_COLORS[h] || EST_EXTRA_COLORS[ei++ % EST_EXTRA_COLORS.length]; });
+    return map;
+  }
+  // Keep the actual cost head — preset or a custom typed one; only blanks fall back to Misc.
+  function estHead(it) { var h = it && it.cost_head && String(it.cost_head).trim(); return h || 'Misc'; }
 
   var pid = parseInt(TZ.qs('project'), 10) || 0;
   var section = TZ.qs('section') || 'overview';
@@ -260,7 +268,9 @@
   function sec_materials(c) {
     var editM = mid ? TZ.db.get('project_materials', mid) : null;
     if (editM && editM.project_id !== pid) editM = null;
-    var matCats = ['Cement', 'Steel', 'Sand', 'Bricks', 'Aggregate', 'Tiles', 'Paint', 'Plumbing', 'Electrical', 'Wood', 'Hardware', 'Other'];
+    // "Other" is supplied by fieldSelectOther (it reveals a text box to type a
+    // custom category) — don't list it here or it would appear twice.
+    var matCats = ['Cement', 'Steel', 'Sand', 'Bricks', 'Aggregate', 'Tiles', 'Paint', 'Plumbing', 'Electrical', 'Wood', 'Hardware'];
     var catOpts = {}; matCats.forEach(function (m) { catOpts[m] = m; });
 
     // Group purchases by material name — each group is one item (e.g. Cement),
@@ -323,7 +333,7 @@
         '<form id="matForm" class="grid grid-cols-2 md:grid-cols-4 gap-3">' +
           '<input type="hidden" name="id" value="' + (editM ? editM.id : 0) + '">' +
           '<div class="col-span-2">' + F('Material name', 'name', editM && editM.name, 'text', 'e.g. Cement') + '</div>' +
-          S('Category', 'category', catOpts, (editM && editM.category) || 'Cement') +
+          SO('Category', 'category', catOpts, (editM && editM.category) || 'Cement', 'Type category name') +
           F('Supplier', 'supplier', editM && editM.supplier, 'text', 'Supplier name') +
           F('Quantity', 'quantity', editM && editM.quantity, 'number', '0', 'step="0.01"') +
           F('Unit', 'unit', editM && editM.unit, 'text', 'Bags / MT / Cu.ft') +
@@ -361,25 +371,30 @@
     });
     var fl = floorList(c);
     var floorOpts = {}; fl.forEach(function (f) { floorOpts[f] = f; });
-    var headOpts = {}; EST_HEADS.forEach(function (h) { headOpts[h] = h; });
     var order = [];
     fl.forEach(function (f) { if (groups[f]) order.push(f); });
     present.forEach(function (f) { if (order.indexOf(f) < 0) order.push(f); });
 
-    // Subtotal per cost head across the whole estimate
+    // Subtotal per cost head across the whole estimate. Preset heads always show
+    // (even at zero); any custom ("Other") heads actually used are appended after.
     var headTot = {}; EST_HEADS.forEach(function (h) { headTot[h] = 0; });
-    items.forEach(function (it) { var h = estHead(it); headTot[h] += num(it.amount); });
-    var hmax = 1; EST_HEADS.forEach(function (h) { hmax = Math.max(hmax, headTot[h]); });
+    items.forEach(function (it) { var h = estHead(it); headTot[h] = (headTot[h] || 0) + num(it.amount); });
+    var displayHeads = EST_HEADS.slice();
+    Object.keys(headTot).forEach(function (h) { if (displayHeads.indexOf(h) < 0) displayHeads.push(h); });
+    var headColors = headColorMap(displayHeads);
+    var hmax = 1; displayHeads.forEach(function (h) { hmax = Math.max(hmax, headTot[h] || 0); });
+    // Cost head dropdown = presets + any custom heads already used (then "Other").
+    var headOpts = {}; displayHeads.forEach(function (h) { headOpts[h] = h; });
 
     var headPanel = '<div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5">' +
       '<div class="flex items-center justify-between mb-3"><h3 class="font-bold text-slate-900 text-sm font-display">Cost Heads Breakdown</h3>' +
         '<span class="text-xs text-slate-400">Grand total <span class="font-semibold text-slate-700">' + money(estTotal) + '</span></span></div>' +
-      '<div class="space-y-2.5">' + EST_HEADS.map(function (h) {
+      '<div class="space-y-2.5">' + displayHeads.map(function (h) {
         var t = headTot[h] || 0, pctT = estTotal > 0 ? Math.round(t / estTotal * 100) : 0;
         return '<div><div class="flex justify-between text-xs mb-1">' +
-          '<span class="font-medium text-slate-600 flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background:' + EST_HEAD_COLORS[h] + '"></span>' + e(h) + '</span>' +
+          '<span class="font-medium text-slate-600 flex items-center gap-1.5"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background:' + headColors[h] + '"></span>' + e(h) + '</span>' +
           '<span class="text-slate-500"><span class="font-semibold text-slate-700">' + money(t) + '</span> · ' + pctT + '%</span></div>' +
-          '<div class="bg-slate-100 rounded-full h-2"><div class="h-2 rounded-full" style="width:' + (t / hmax * 100) + '%;background:' + EST_HEAD_COLORS[h] + '"></div></div></div>';
+          '<div class="bg-slate-100 rounded-full h-2"><div class="h-2 rounded-full" style="width:' + (t / hmax * 100) + '%;background:' + headColors[h] + '"></div></div></div>';
       }).join('') + '</div></div>';
 
     var floorSummary = order.length ? '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">' + order.map(function (f) {
@@ -392,13 +407,14 @@
     var body = order.map(function (f) {
       var g = groups[f];
       var header = '<tr class="bg-slate-50/80 border-t-2 border-slate-200">' +
-        '<td colspan="4" class="px-4 py-2.5"><span class="font-bold text-slate-800">' + e(g.floor) + '</span> <span class="text-[11px] text-slate-400 ml-1">' + g.items.length + ' item' + (g.items.length > 1 ? 's' : '') + '</span></td>' +
+        '<td colspan="5" class="px-4 py-2.5"><span class="font-bold text-slate-800">' + e(g.floor) + '</span> <span class="text-[11px] text-slate-400 ml-1">' + g.items.length + ' item' + (g.items.length > 1 ? 's' : '') + '</span></td>' +
         '<td class="px-4 py-2.5 text-right font-bold text-brand">' + money(g.total) + '</td><td></td></tr>';
       var rows = g.items.map(function (it) {
-        var h = estHead(it), col = EST_HEAD_COLORS[h];
+        var h = estHead(it), col = headColors[h] || '#64748B';
         return '<tr class="hover:bg-slate-50/70">' +
           '<td class="px-4 py-3 font-medium text-slate-800">' + e(it.description) +
             '<span class="ml-2 text-[10px] font-semibold px-1.5 py-0.5 rounded-md align-middle whitespace-nowrap" style="background:' + col + '1f;color:' + col + '">' + e(h) + '</span></td>' +
+          '<td class="px-4 py-3 hidden sm:table-cell text-slate-500 whitespace-nowrap">' + e(it.est_date || '') + '</td>' +
           '<td class="px-4 py-3 hidden sm:table-cell text-slate-500">' + e(it.unit) + '</td>' +
           '<td class="px-4 py-3 text-right text-slate-600">' + trimNum(it.qty, 2) + '</td>' +
           '<td class="px-4 py-3 text-right text-slate-600">' + money(it.rate) + '</td>' +
@@ -407,24 +423,24 @@
       }).join('');
       return header + rows;
     }).join('');
-    if (!items.length) body = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No estimate lines yet. Pick a floor and cost head, then add one below.</td></tr>';
-    var foot = items.length ? '<tfoot><tr class="bg-slate-50 border-t-2 border-slate-200"><td colspan="4" class="px-4 py-2.5 text-right text-xs font-semibold text-slate-500 uppercase">Grand total (all floors)</td><td class="px-4 py-2.5 text-right font-bold text-brand">' + money(estTotal) + '</td><td></td></tr></tfoot>' : '';
+    if (!items.length) body = '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">No estimate lines yet. Pick a floor and cost head, then add one below.</td></tr>';
+    var foot = items.length ? '<tfoot><tr class="bg-slate-50 border-t-2 border-slate-200"><td colspan="5" class="px-4 py-2.5 text-right text-xs font-semibold text-slate-500 uppercase">Grand total (all floors)</td><td class="px-4 py-2.5 text-right font-bold text-brand">' + money(estTotal) + '</td><td></td></tr></tfoot>' : '';
 
     return sectionHead('Cost Estimation', 'Floor-wise estimate broken down by cost head — Labour, Material, Equipment & more') +
       headPanel +
       floorSummary +
       '<div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-sm">' +
         '<thead><tr class="text-left text-xs text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-100">' +
-          '<th class="px-4 py-3 font-semibold">Material / Work · Head</th><th class="px-4 py-3 font-semibold hidden sm:table-cell">Unit</th>' +
+          '<th class="px-4 py-3 font-semibold">Material / Work · Head</th><th class="px-4 py-3 font-semibold hidden sm:table-cell">Date</th><th class="px-4 py-3 font-semibold hidden sm:table-cell">Unit</th>' +
           '<th class="px-4 py-3 font-semibold text-right">Qty</th><th class="px-4 py-3 font-semibold text-right">Rate</th>' +
           '<th class="px-4 py-3 font-semibold text-right">Amount</th><th class="px-4 py-3"></th></tr></thead>' +
         '<tbody class="divide-y divide-slate-100">' + body + '</tbody>' + foot + '</table></div></div>' +
       '<div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5"><p class="text-sm font-bold text-slate-800 font-display mb-3">Add line to a floor</p>' +
         '<form id="estForm" class="grid grid-cols-2 md:grid-cols-6 gap-3 items-end">' +
-          S('Floor', 'floor', floorOpts, 'Floor 1') +
-          S('Cost head', 'cost_head', headOpts, 'Labour') +
+          SO('Floor', 'floor', floorOpts, 'Floor 1', 'Type floor name') +
+          SO('Cost head', 'cost_head', headOpts, 'Labour', 'Type cost head') +
           '<div class="col-span-2">' + F('Material / Work', 'description', '', 'text', 'e.g. Mason work, Cement, RCC slab') + '</div>' +
-          F('Unit', 'unit', '', 'text', 'Sq.ft / Bags / Days') + F('Qty', 'qty', '1', 'number', '0', 'step="0.01"') + F('Rate (' + CUR + ')', 'rate', '0', 'number', '0', 'step="0.01"') +
+          F('Unit', 'unit', '', 'text', 'Sq.ft / Bags / Days') + F('Qty', 'qty', '1', 'number', '0', 'step="0.01"') + F('Rate (' + CUR + ')', 'rate', '0', 'number', '0', 'step="0.01"') + F('Date', 'est_date', TZ.todayISO(), 'date') +
           '<div class="col-span-2 md:col-span-6"><button class="px-5 py-2.5 bg-brand hover:bg-brand-hover text-white text-sm font-semibold rounded-xl flex items-center gap-1.5">' + icon('plus', 16) + 'Add line</button></div>' +
         '</form>' +
         '<p class="text-[11px] text-slate-400 mt-2">Pick the floor and cost head (Labour, Material, Equipment…), then the item with its quantity and rate. Amount = Qty × Rate. Totals roll up per floor and per cost head.</p></div>';
@@ -457,7 +473,7 @@
       '<div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5"><p class="text-sm font-bold text-slate-800 font-display mb-3">Add expense</p>' +
         '<form id="expForm" class="grid grid-cols-2 md:grid-cols-4 gap-3 items-end">' +
           '<div class="col-span-2">' + F('Description', 'description', '', 'text', 'e.g. Mason wages week 3') + '</div>' +
-          S('Category', 'category', catOpts, 'Labour') + F('Amount (' + CUR + ')', 'amount', '', 'number', '0', 'step="0.01"') + F('Date', 'exp_date', TZ.todayISO(), 'date') +
+          SO('Category', 'category', catOpts, 'Labour', 'Type category name') + F('Amount (' + CUR + ')', 'amount', '', 'number', '0', 'step="0.01"') + F('Date', 'exp_date', TZ.todayISO(), 'date') +
           '<div class="col-span-2 md:col-span-4"><button class="px-5 py-2.5 bg-brand hover:bg-brand-hover text-white text-sm font-semibold rounded-xl flex items-center gap-1.5">' + icon('plus', 16) + 'Add expense</button></div>' +
         '</form></div>';
   }
@@ -605,7 +621,7 @@
 
     onSubmit('estForm', function (d) {
       var qty = Number(d.qty) || 0, rate = Number(d.rate) || 0;
-      TZ.db.insert('project_estimates', { project_id: pid, floor: (d.floor || '').trim(), cost_head: (d.cost_head || 'Misc').trim(), description: (d.description || '').trim(), unit: (d.unit || '').trim(), qty: qty, rate: rate, amount: qty * rate });
+      TZ.db.insert('project_estimates', { project_id: pid, floor: (d.floor || '').trim(), cost_head: (d.cost_head || 'Misc').trim(), description: (d.description || '').trim(), unit: (d.unit || '').trim(), qty: qty, rate: rate, amount: qty * rate, est_date: d.est_date || TZ.todayISO() });
       TZ.flash('Estimate line added.'); go();
     });
     delegate(root, 'data-delest', function (id) { if (confirm('Remove line?')) { TZ.db.remove('project_estimates', id); TZ.flash('Line removed.', 'info'); go(); } });

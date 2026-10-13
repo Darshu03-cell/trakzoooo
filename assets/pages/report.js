@@ -1,6 +1,7 @@
 /* Printable report (ports export.php PDF branch). Opens, renders, auto-prints. */
 (function () {
   if (!TZ.currentUser()) { location.replace('login.html'); return; }
+  if (!TZ.isAdmin()) { location.replace('workspace.html'); return; }
   var e = TZ.esc;
   var cur = TZ.CUR;
   function mny(v) { v = Number(v) || 0; return cur + (v < 0 ? '-' : '') + TZ.inrGroup(Math.abs(v)); }

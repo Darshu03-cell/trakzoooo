@@ -16,8 +16,13 @@ still runs — it just keeps data in the local browser only.
 1. In your project, open **SQL Editor** (left sidebar) → **New query**.
 2. Open the file [`supabase-schema.sql`](supabase-schema.sql) from this project,
    copy **everything**, paste it into the editor, and click **Run**.
-3. You should see “Success”. Under **Table Editor** you’ll now see all 15 tables
-   (clients, projects, materials, …) — all empty.
+3. You should see “Success”. Under **Table Editor** you’ll now see all 16 tables
+   (clients, projects, materials, …, user_activity) — all empty.
+
+> **Already set up earlier?** Just run the schema again — it's safe to re-run
+> (`create table if not exists` / `add column if not exists`). This adds the new
+> `user_activity` table (login/signup feed for the Admin Panel) and the
+> `cost_head` / `est_date` columns on `project_estimates`.
 
 ## Step 3 — Paste your two keys into the app
 1. In Supabase go to **Project Settings → API**.
