@@ -1,5 +1,5 @@
 -- ============================================================================
--- Trackzo — Supabase schema
+-- InfaBuild — Supabase schema
 -- Run this ONCE in your Supabase project:  SQL Editor  →  New query  →  paste  →  Run
 -- Creates all business tables. Numeric columns use double precision / bigint so
 -- values come back to the browser as real numbers (not strings). IDs are assigned

@@ -31,7 +31,7 @@
         '</form></div>' +
 
       '<div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 lg:col-span-2">' +
-        '<h3 class="font-bold text-slate-900 font-display mb-2">About Trackzo</h3>' +
+        '<h3 class="font-bold text-slate-900 font-display mb-2">About InfaBuild</h3>' +
         '<p class="text-sm text-slate-500">Construction ERP · HTML/CSS/JS edition (localStorage). Manage projects, clients, materials, purchases, finance and estimates in one place.</p>' +
         '<p class="text-xs text-slate-400 mt-3">Signed in as <strong class="text-slate-600">' + e(u.email) + '</strong></p></div>' +
       '</div>';

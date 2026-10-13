@@ -50,7 +50,7 @@
   var generated = TZ.reportStamp();
   var h =
     '<div class="toolbar"><button class="btn" onclick="window.print()">🖨 Save as PDF</button><a class="btn grey" href="reports.html">Back</a></div>' +
-    '<div class="bar"><div class="brand"><div class="logo">T</div><div><h1>Trackzo — Full Business Report</h1><div class="sub">Construction ERP · all amounts in Indian Rupees (' + cur + ')</div></div></div>' +
+    '<div class="bar"><div class="brand"><div class="logo">IB</div><div><h1>InfaBuild — Full Business Report</h1><div class="sub">Construction ERP · all amounts in Indian Rupees (' + cur + ')</div></div></div>' +
       '<div class="sub" style="text-align:right">Generated<br><strong>' + e(generated) + '</strong></div></div>' +
 
     '<div class="cards">' +
@@ -95,7 +95,7 @@
       r.txns.map(function (t) { return [t.txn_date, t.description, t.category, TZ.ucfirst(t.type), { __html: '<span class="' + (t.type === 'income' ? 'pos' : 'neg') + '">' + (t.type === 'income' ? '+' : '-') + mny(t.amount) + '</span>' }]; }));
 
   document.getElementById('app').innerHTML = h;
-  document.title = 'Trackzo Report — ' + TZ.todayISO();
+  document.title = 'InfaBuild Report — ' + TZ.todayISO();
   setTimeout(function () { window.print(); }, 400);
   });
 })();

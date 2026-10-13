@@ -1,6 +1,6 @@
-# Trackzo — HTML / CSS / JS edition
+# InfaBuild — HTML / CSS / JS edition
 
-A pure front-end conversion of the Trackzo construction-ERP (originally PHP + MySQL).
+A pure front-end conversion of the InfaBuild construction-ERP (originally PHP + MySQL).
 **No server, no build step, no database** — everything runs in the browser and data is
 saved to **localStorage**. It's a faithful, fully-working port: login, dashboard, and full
 create / edit / delete for Clients, Projects, Materials, Purchase Orders, Finance, Accounts,

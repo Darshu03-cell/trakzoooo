@@ -1,4 +1,4 @@
-/* Trackzo — client-side data store, formatting helpers, mock auth & flash.
+/* InfaBuild — client-side data store, formatting helpers, mock auth & flash.
  *
  * Data layer: a synchronous in-memory cache (mirrored to localStorage for
  * offline use) that is BACKED BY SUPABASE. On load it pulls every table from
@@ -17,7 +17,7 @@
   /* ============================================================ */
 
   var CUR = '₹';                 // Indian Rupee
-  var APP_NAME = 'Trackzo';
+  var APP_NAME = 'InfaBuild';
   var ADMIN_EMAIL = 'admin@gmail.com';
   var DB_KEY = 'trackzo_db';
   var USER_KEY = 'trackzo_user';
@@ -207,7 +207,7 @@
     if (!SB) return Promise.resolve();
     return Promise.all(CLOUD_TABLES.map(function (t) {
       return SB.from(t).select('*').then(function (res) {
-        if (res.error) { if (window.console) console.warn('[Trackzo] pull ' + t + ':', res.error.message); return; }
+        if (res.error) { if (window.console) console.warn('[InfaBuild] pull ' + t + ':', res.error.message); return; }
         DB[t] = res.data || [];
       }, function () { /* network error: keep local copy */ });
     })).then(function () { applyOutbox(); applyOwnerIdx(); persist(); });

@@ -1,4 +1,4 @@
-/* Trackzo — app shell (ports inc/header.php + inc/footer.php).
+/* InfaBuild — app shell (ports inc/header.php + inc/footer.php).
  * TZ.mount({page, title, action}, renderFn) builds the sidebar/topbar layout,
  * enforces login, shows flashes, then calls renderFn(mainContentEl). */
 (function () {
@@ -78,7 +78,7 @@
           '<a href="' + (TZ.isAdmin() ? 'index.html' : 'workspace.html') + '" class="flex items-center gap-3 overflow-hidden">' +
             '<div class="flex items-center justify-center w-9 h-9 rounded-xl bg-brand flex-shrink-0 text-white">' + icon('hard-hat', 20) + '</div>' +
             '<div class="flex flex-col leading-none sb-label">' +
-              '<span class="text-white font-bold text-lg tracking-tight font-display">Trackzo</span>' +
+              '<span class="text-white font-bold text-lg tracking-tight font-display">InfaBuild</span>' +
               '<span class="text-blue-300 text-[10px] font-medium tracking-widest uppercase">Construction ERP</span>' +
             '</div>' +
           '</a>' +

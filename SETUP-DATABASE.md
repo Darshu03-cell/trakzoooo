@@ -1,6 +1,6 @@
-# Connecting Trackzo to a real database (Supabase)
+# Connecting InfaBuild to a real database (Supabase)
 
-Trackzo now stores all business data in **Supabase** (a hosted Postgres database)
+InfaBuild now stores all business data in **Supabase** (a hosted Postgres database)
 instead of only the browser. Follow these 3 steps once. Until you do, the app
 still runs — it just keeps data in the local browser only.
 

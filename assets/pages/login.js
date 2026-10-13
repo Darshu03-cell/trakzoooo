@@ -20,7 +20,7 @@
       '<div class="hidden lg:flex flex-col justify-between p-10 w-[440px] flex-shrink-0" style="background:linear-gradient(160deg,#0B1F3A 0%,#1D4ED8 100%)">' +
         '<div class="flex items-center gap-3">' +
           '<div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white">' + icon('hard-hat', 22) + '</div>' +
-          '<div><p class="text-white font-bold text-xl tracking-tight font-display">Trackzo</p><p class="text-blue-200 text-[11px] tracking-widest uppercase">Construction ERP</p></div>' +
+          '<div><p class="text-white font-bold text-xl tracking-tight font-display">InfaBuild</p><p class="text-blue-200 text-[11px] tracking-widest uppercase">Construction ERP</p></div>' +
         '</div>' +
         '<div>' +
           '<h2 class="text-white text-3xl font-bold mb-4 leading-tight font-display">Build Smarter.<br>Track Better.</h2>' +
@@ -31,18 +31,18 @@
             }).join('') +
           '</div>' +
         '</div>' +
-        '<p class="text-blue-300 text-xs">© ' + year + ' Trackzo. All rights reserved.</p>' +
+        '<p class="text-blue-300 text-xs">© ' + year + ' InfaBuild. All rights reserved.</p>' +
       '</div>' +
 
       '<div class="flex-1 flex items-center justify-center p-6">' +
         '<div class="w-full max-w-md">' +
           '<div class="flex items-center gap-3 mb-8 lg:hidden">' +
             '<div class="w-10 h-10 rounded-xl bg-brand flex items-center justify-center text-white">' + icon('hard-hat', 22) + '</div>' +
-            '<div><p class="font-bold text-xl text-slate-900 font-display">Trackzo</p><p class="text-slate-400 text-xs">Construction ERP</p></div>' +
+            '<div><p class="font-bold text-xl text-slate-900 font-display">InfaBuild</p><p class="text-slate-400 text-xs">Construction ERP</p></div>' +
           '</div>' +
           '<div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">' +
             '<h1 id="formTitle" class="text-2xl font-bold text-slate-900 mb-1 font-display">Welcome back</h1>' +
-            '<p id="formSub" class="text-slate-400 text-sm mb-6">Sign in to your Trackzo workspace</p>' +
+            '<p id="formSub" class="text-slate-400 text-sm mb-6">Sign in to your InfaBuild workspace</p>' +
             '<div class="bg-slate-100 rounded-xl p-1 flex mb-6 text-sm font-semibold">' +
               '<button type="button" id="tabIn" class="flex-1 py-2 rounded-lg transition-all">Sign In</button>' +
               '<button type="button" id="tabUp" class="flex-1 py-2 rounded-lg transition-all">Sign Up</button>' +
@@ -99,8 +99,8 @@
   var track = document.getElementById('track');
   var TITLES = { signin: 'Welcome back', signup: 'Create your account', reset: 'Reset your password' };
   var SUBS = {
-    signin: 'Sign in to your Trackzo workspace',
-    signup: 'Set up your Trackzo workspace',
+    signin: 'Sign in to your InfaBuild workspace',
+    signup: 'Set up your InfaBuild workspace',
     reset: 'Enter your email and choose a new password',
   };
   function setMode(m) {

@@ -75,7 +75,7 @@
     }
 
     var out = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body>' +
-      '<table><tr><td colspan="11" style="font-size:16px;font-weight:bold">Trackzo — Full Business Report</td></tr>' +
+      '<table><tr><td colspan="11" style="font-size:16px;font-weight:bold">InfaBuild — Full Business Report</td></tr>' +
       '<tr><td colspan="11">Generated: ' + e(generated) + ' · all amounts in ' + e(cur) + '</td></tr></table><br>';
 
     out += sheet('FINANCIAL SUMMARY', ['Metric', 'Amount (' + cur + ')'], [
@@ -123,7 +123,7 @@
     var blob = new Blob(['﻿' + out], { type: 'application/vnd.ms-excel;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'trackzo-full-report-' + TZ.todayISO() + '.xls';
+    a.download = 'infabuild-full-report-' + TZ.todayISO() + '.xls';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
   }
