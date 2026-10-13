@@ -76,7 +76,7 @@
       '<aside id="sidebar" class="sidebar-grad flex flex-col h-full flex-shrink-0 transition-all duration-300 fixed inset-y-0 left-0 z-50 -translate-x-full lg:static lg:translate-x-0">' +
         '<div class="flex items-center px-4 border-b border-white/10" style="height:64px">' +
           '<a href="' + (TZ.isAdmin() ? 'index.html' : 'workspace.html') + '" class="flex items-center gap-3 overflow-hidden">' +
-            '<div class="flex items-center justify-center w-9 h-9 rounded-xl bg-brand flex-shrink-0 text-white">' + icon('hard-hat', 20) + '</div>' +
+            '<div class="flex items-center justify-center w-9 h-9 rounded-xl bg-white flex-shrink-0 overflow-hidden shadow-sm"><img src="assets/img/infabuild-icon.png?v=1" alt="InfaBuild" class="w-full h-full object-contain p-0.5"></div>' +
             '<div class="flex flex-col leading-none sb-label">' +
               '<span class="text-white font-bold text-lg tracking-tight font-display">InfaBuild</span>' +
               '<span class="text-blue-300 text-[10px] font-medium tracking-widest uppercase">Construction ERP</span>' +

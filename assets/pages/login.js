@@ -17,9 +17,9 @@
 
   var html =
     '<div class="min-h-screen flex" style="background:#F1F5F9">' +
-      '<div class="hidden lg:flex flex-col justify-between p-10 w-[440px] flex-shrink-0" style="background:linear-gradient(160deg,#0B1F3A 0%,#1D4ED8 100%)">' +
+      '<div class="hidden lg:flex flex-col justify-between p-10 w-[440px] flex-shrink-0" style="background:radial-gradient(900px 520px at 85% -12%, rgba(247,148,30,.20), transparent 55%), linear-gradient(160deg,#0B1F3A 0%,#15336b 52%,#1D4ED8 100%)">' +
         '<div class="flex items-center gap-3">' +
-          '<div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white">' + icon('hard-hat', 22) + '</div>' +
+          '<div class="w-10 h-10 rounded-xl bg-white flex items-center justify-center overflow-hidden shadow-md"><img src="assets/img/infabuild-icon.png?v=1" alt="InfaBuild" class="w-full h-full object-contain p-0.5"></div>' +
           '<div><p class="text-white font-bold text-xl tracking-tight font-display">InfaBuild</p><p class="text-blue-200 text-[11px] tracking-widest uppercase">Construction ERP</p></div>' +
         '</div>' +
         '<div>' +
@@ -37,7 +37,7 @@
       '<div class="flex-1 flex items-center justify-center p-6">' +
         '<div class="w-full max-w-md">' +
           '<div class="flex items-center gap-3 mb-8 lg:hidden">' +
-            '<div class="w-10 h-10 rounded-xl bg-brand flex items-center justify-center text-white">' + icon('hard-hat', 22) + '</div>' +
+            '<div class="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center overflow-hidden shadow-sm"><img src="assets/img/infabuild-icon.png?v=1" alt="InfaBuild" class="w-full h-full object-contain p-0.5"></div>' +
             '<div><p class="font-bold text-xl text-slate-900 font-display">InfaBuild</p><p class="text-slate-400 text-xs">Construction ERP</p></div>' +
           '</div>' +
           '<div class="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">' +
