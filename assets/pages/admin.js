@@ -8,11 +8,17 @@
   var badge = { active: 'bg-blue-100 text-blue-700', completed: 'bg-emerald-100 text-emerald-700', 'on-hold': 'bg-amber-100 text-amber-700', planning: 'bg-slate-100 text-slate-600' };
 
   TZ.mount({ page: 'admin', title: 'Admin Panel' }, function (root) {
-    var users = TZ.db.all('users');
     var projects = TZ.db.all('projects');
     var clients = TZ.db.all('clients');
     var txns = TZ.db.all('transactions');
     var today = TZ.todayISO();
+
+    // The `users` table lives only in each person's own browser, so on its own it
+    // would never show customers who signed up on another device. The synced
+    // `user_activity` feed does reach every device — so merge the two: every
+    // email that has ever signed up or logged in becomes a visible account here.
+    var activityAll = TZ.db.all('user_activity');
+    var users = mergeAccounts(TZ.db.all('users'), activityAll);
 
     var totalUsers = users.length;
     var customers = users.filter(function (u) { return String(u.email).toLowerCase() !== ADMIN; }).length;
@@ -33,17 +39,18 @@
       ['Net (Inc − Exp)', moneyShort(income - expense), 'wallet', (income - expense < 0 ? 'bg-rose-50 text-rose-500' : 'bg-blue-50 text-blue-600'), 'company-wide'],
     ];
 
-    // sort users: admin first, then created_at desc, id desc
+    // sort users: admin first, then created_at desc, then name/email
     users.sort(function (a, b) {
       var aa = String(a.email).toLowerCase() === ADMIN ? 1 : 0, bb = String(b.email).toLowerCase() === ADMIN ? 1 : 0;
       if (aa !== bb) return bb - aa;
-      var d = String(b.created_at || '').localeCompare(String(a.created_at || '')); return d !== 0 ? d : b.id - a.id;
+      var d = String(b.created_at || '').localeCompare(String(a.created_at || ''));
+      return d !== 0 ? d : String(a.name || a.email).localeCompare(String(b.name || b.email));
     });
     projects.sort(function (a, b) { return b.id - a.id; });
     var cmap = {}; clients.forEach(function (c) { cmap[c.id] = c; });
 
     // Login / signup feed (newest first) — synced across devices via Supabase.
-    var activity = TZ.db.all('user_activity').slice().sort(function (a, b) {
+    var activity = activityAll.slice().sort(function (a, b) {
       var d = String(b.at || '').localeCompare(String(a.at || '')); return d !== 0 ? d : (b.id - a.id);
     }).slice(0, 50);
 
@@ -69,7 +76,9 @@
           : '<span class="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600">Customer</span>') + '</td>' +
         '<td class="px-5 py-3"><div class="flex items-center justify-end gap-1.5">' +
           (isAdmin ? '<span class="text-[11px] text-slate-400">Protected</span>'
-            : '<button data-del="' + u.id + '" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 flex items-center justify-center" title="Delete user">' + icon('trash', 15) + '</button>') +
+            : (u.remote
+              ? '<span class="text-[11px] text-slate-400" title="Signed up or logged in from another device — their account lives on that device">Synced</span>'
+              : '<button data-del="' + u.id + '" class="w-8 h-8 rounded-lg bg-slate-50 hover:bg-rose-50 text-slate-500 hover:text-rose-600 flex items-center justify-center" title="Delete user">' + icon('trash', 15) + '</button>')) +
         '</div></td></tr>';
     }).join('');
 
@@ -108,7 +117,7 @@
 
       '<div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">' +
         '<div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><div><h3 class="font-bold text-slate-900 text-sm font-display">User Accounts &amp; Logins</h3>' +
-          '<p class="text-xs text-slate-400">Everyone who has signed up to the system</p></div>' +
+          '<p class="text-xs text-slate-400">Everyone who has signed up or logged in — including from other devices</p></div>' +
           '<span class="text-xs bg-blue-50 text-blue-600 font-semibold px-2.5 py-1 rounded-lg">' + totalUsers + ' total</span></div>' +
         '<div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-xs text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-100">' +
           '<th class="px-5 py-3 font-semibold">User</th><th class="px-5 py-3 font-semibold hidden md:table-cell">Joined</th>' +
@@ -147,5 +156,38 @@
   function initials(name) {
     var p = String(name || '').trim().split(/\s+/);
     return (p[0].charAt(0) + (p[1] ? p[1].charAt(0) : '')).toUpperCase();
+  }
+
+  // Merge the browser-local `users` table with every account seen in the synced
+  // `user_activity` feed, keyed by email. Local accounts win on identity; any
+  // email seen only in the activity feed (i.e. signed up / logged in from a
+  // different device) is surfaced as a "remote" account so the admin still sees
+  // it. Join date = earliest signup (or earliest activity); last login = latest
+  // login event.
+  function mergeAccounts(localUsers, acts) {
+    var byEmail = {};
+    (localUsers || []).forEach(function (u) {
+      var em = String(u.email || '').toLowerCase(); if (!em) return;
+      byEmail[em] = { id: u.id, name: u.name, email: u.email, role: u.role,
+        created_at: u.created_at || null, last_login: u.last_login || null, remote: false };
+    });
+    (acts || []).forEach(function (a) {
+      var em = String(a.email || '').toLowerCase(); if (!em) return;
+      var rec = byEmail[em];
+      if (!rec) {
+        rec = byEmail[em] = { id: 'act:' + em, name: a.name || a.email, email: a.email,
+          role: em === ADMIN ? 'Administrator' : 'Member', created_at: null, last_login: null, remote: true };
+      }
+      if ((!rec.name || rec.name === rec.email) && a.name) rec.name = a.name;
+      var at = a.at || '';
+      if (at && (!rec._firstAt || at < rec._firstAt)) rec._firstAt = at;
+      if (a.event === 'signup' && (!rec._signupAt || at < rec._signupAt)) rec._signupAt = at;
+      if (a.event === 'login' && at && (!rec.last_login || at > rec.last_login)) rec.last_login = at;
+    });
+    return Object.keys(byEmail).map(function (k) {
+      var r = byEmail[k];
+      if (!r.created_at) r.created_at = String(r._signupAt || r._firstAt || '').slice(0, 10) || null;
+      return r;
+    });
   }
 })();

@@ -153,6 +153,14 @@
     var remaining = budget - totalExpenses;
     var progress = project.progress | 0;
 
+    // Keep the project's stored `spent` in step with its material + expense totals
+    // so the Projects list, Dashboard and Admin panel show a live remaining budget
+    // instead of a permanent ₹0 spent. Self-heals on every workspace view.
+    if (num(project.spent) !== totalExpenses) {
+      TZ.db.update('projects', pid, { spent: totalExpenses });
+      project.spent = totalExpenses;
+    }
+
     var ctx = { det: det, mats: mats, exps: exps, materialCost: materialCost, expenseTotal: expenseTotal, labourCost: labourCost, budget: budget, totalExpenses: totalExpenses, remaining: remaining, progress: progress };
 
     // secondary sidebar
